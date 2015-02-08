@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AppExtract</string>
+    <string name="about_title">About</string>
+    <string name="about_desc">AppExtract for Android generates a list of both, installed and running apps. These lists can be transferred via email to an analyst for further analysis.</string>
+    <string name="action_about">About</string>
+    <string name="action_send">Send report to analyst</string>
+    <string name="button_text">Send report to analyst</string>
+    <string name="app_icon_desc">App Icon</string>
+    <string name="main">Home</string>
+    <string name="installed">Installed</string>
+    <string name="running">Running</string>
+</resources>

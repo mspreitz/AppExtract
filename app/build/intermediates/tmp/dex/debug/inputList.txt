@@ -1,0 +1,2 @@
+/Users/mspreitz/AndroidstudioProjects/AppExtract/app/build/intermediates/classes/debug
+/Users/mspreitz/AndroidstudioProjects/AppExtract/app/build/intermediates/pre-dexed/debug/RootTools-3895d77de8c432786b8116673b004d6cefd1f02a.jar
