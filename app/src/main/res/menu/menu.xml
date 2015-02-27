@@ -3,12 +3,12 @@
             android:id="@+id/menu_about"
             android:orderInCategory="200"
             android:icon="@android:drawable/ic_menu_info_details"
-            android:showAsAction="always|withText"
+            android:showAsAction="ifRoom|withText"
             android:title="@string/action_about"/>
     <item
             android:id="@+id/menu_send"
             android:orderInCategory="100"
             android:icon="@android:drawable/ic_menu_send"
-            android:showAsAction="always|withText"
+            android:showAsAction="ifRoom|withText"
             android:title="@string/action_send"/>
 </menu>
