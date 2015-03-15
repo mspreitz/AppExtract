@@ -4,10 +4,12 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -86,10 +88,6 @@ public class Main extends Activity {
         builder.show();
     }
 
-    public void sendMessageButton(View view){
-        sendMessage();
-    }
-
     public static String calculateMD5(String apkFile) {
         MessageDigest digest;
         String output = "unknown";
@@ -118,6 +116,16 @@ public class Main extends Activity {
             Log.e("MD5", "No md5 algorithm available", e);
         }
         return output;
+    }
+
+    public void sendEmailMessage(String body) {
+        Intent mailIntent = new Intent();
+        mailIntent.setAction(Intent.ACTION_SEND);
+        mailIntent.setType("message/rfc822");
+        mailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {""});
+        mailIntent.putExtra(Intent.EXTRA_SUBJECT, "AppExtract for Android");
+        mailIntent.putExtra(Intent.EXTRA_TEXT, body);
+        startActivity(Intent.createChooser(mailIntent, "Please choose your email app:"));
     }
 
     public void sendMessage() {
@@ -234,13 +242,29 @@ public class Main extends Activity {
         sendEmailMessage(eMailBody);
     }
 
-    public void sendEmailMessage(String body) {
-        Intent mailIntent = new Intent();
-        mailIntent.setAction(Intent.ACTION_SEND);
-        mailIntent.setType("message/rfc822");
-        mailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {""});
-        mailIntent.putExtra(Intent.EXTRA_SUBJECT, "AppExtract for Android");
-        mailIntent.putExtra(Intent.EXTRA_TEXT, body);
-        startActivity(Intent.createChooser(mailIntent, "Please choose your email app:"));
+    public class LoadData extends AsyncTask<Void, Void, Void> {
+        ProgressDialog progressDialog;
+        @Override
+        protected void onPreExecute()
+        {
+            progressDialog = ProgressDialog.show(Main.this, "AppExtract","gathering data and calculating md5 hashes for installed apps...", true);
+        };
+        @Override
+        protected Void doInBackground(Void... params)
+        {
+            sendMessage();
+            return null;
+        }
+        @Override
+        protected void onPostExecute(Void result)
+        {
+            super.onPostExecute(result);
+            progressDialog.dismiss();
+        };
+    }
+
+    public void sendMessageButton(View view){
+        LoadData task = new LoadData();
+        task.execute();
     }
 }
