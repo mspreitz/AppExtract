@@ -31,6 +31,7 @@ import java.util.List;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.io.InputStream;
+import java.util.Locale;
 
 
 public class Main extends Activity {
@@ -39,7 +40,7 @@ public class Main extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActionBar ab = getActionBar();
-        ab.setNavigationMode( ActionBar.NAVIGATION_MODE_TABS );
+        ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         ActionBar.Tab tab1 = ab.newTab().setText(R.string.main).setTabListener(
                 new MyTabListener(this, MainFragment.class.getName()));
         ab.addTab(tab1);
@@ -65,7 +66,8 @@ public class Main extends Activity {
                 break;
             }
             case R.id.menu_send: {
-                sendMessage();
+                LoadData task = new LoadData();
+                task.execute();
                 break;
             }
             default: {
@@ -125,7 +127,9 @@ public class Main extends Activity {
         mailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {""});
         mailIntent.putExtra(Intent.EXTRA_SUBJECT, "AppExtract for Android");
         mailIntent.putExtra(Intent.EXTRA_TEXT, body);
-        startActivity(Intent.createChooser(mailIntent, "Please choose your email app:"));
+        // createChooser is making trouble on Samsung devices
+        // startActivity(Intent.createChooser(mailIntent, "Please choose your email app:"));
+        startActivity(mailIntent);
     }
 
     public void sendMessage() {
@@ -181,8 +185,8 @@ public class Main extends Activity {
                             .append(pm.getPackageInfo(app.packageName, 0).versionName).append(";")
                             .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSubjectDN()).append(";")
                             .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSerialNumber()).append(";")
-                            .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(new Date((pm.getPackageInfo(app.packageName, 0).firstInstallTime)))).append(";")
-                            .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(new Date((pm.getPackageInfo(app.packageName, 0).lastUpdateTime)))).append("\n");
+                            .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).firstInstallTime)))).append(";")
+                            .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).lastUpdateTime)))).append("\n");
                 }catch(Exception e){
                     installedApps.append("UserApp;")
                             .append(pm.getApplicationLabel(app)).append(";")
@@ -248,7 +252,7 @@ public class Main extends Activity {
         protected void onPreExecute()
         {
             progressDialog = ProgressDialog.show(Main.this, "AppExtract","gathering data and calculating md5 hashes for installed apps...", true);
-        };
+        }
         @Override
         protected Void doInBackground(Void... params)
         {
@@ -260,7 +264,7 @@ public class Main extends Activity {
         {
             super.onPostExecute(result);
             progressDialog.dismiss();
-        };
+        }
     }
 
     public void sendMessageButton(View view){
