@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,13 +20,16 @@ import android.view.MenuItem;
 import android.view.View;
 import com.stericson.RootTools.RootTools;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.security.MessageDigest;
@@ -120,6 +124,31 @@ public class Main extends Activity {
         return output;
     }
 
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
+    public void saveFiles(String Data, String Value, String Type) {
+        if (isExternalStorageWritable()) {
+            try {
+                File folder = new File(Environment.getExternalStorageDirectory() + "/AppExtract");
+                if (!folder.exists())
+                    folder.mkdir();
+                final String filename = folder.toString() + "/" + Value + "_" + String.valueOf(Calendar.getInstance().getTimeInMillis()) + "." + Type;
+                FileWriter fw = new FileWriter(filename);
+                fw.append(Data);
+                fw.flush();
+                fw.close();
+            } catch (IOException e) {
+                Log.e("SDcard", "No external storage available", e);
+            }
+        } else {
+            Log.e("SDcard", "No external storage available");
+        }
+    }
+
     public void sendEmailMessage(String body) {
         Intent mailIntent = new Intent();
         mailIntent.setAction(Intent.ACTION_SEND);
@@ -127,8 +156,6 @@ public class Main extends Activity {
         mailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {""});
         mailIntent.putExtra(Intent.EXTRA_SUBJECT, "AppExtract for Android");
         mailIntent.putExtra(Intent.EXTRA_TEXT, body);
-        // createChooser is making trouble on Samsung devices
-        // startActivity(Intent.createChooser(mailIntent, "Please choose your email app:"));
         startActivity(mailIntent);
     }
 
@@ -138,7 +165,7 @@ public class Main extends Activity {
         PackageManager pm = getPackageManager();
         List<ApplicationInfo> apps = pm.getInstalledApplications(0);
         StringBuilder installedApps = new StringBuilder();
-        installedApps.append("Type;App_Name;md5;TargetSdkVersion;Package_Name;Process_Name;APK_Location;Version_Code;Version_Name;Certificate_Info;Certificate_SN;InstallTime;LastModified\n");
+        installedApps.append("Type;App_Name;md5;TargetSdkVersion;Package_Name;Process_Name;APK_Location;Version_Code;Version_Name;Certificate_Info;Certificate_SN;InstallTime;LastModified;\n");
         for(ApplicationInfo app : apps) {
             if ((app.flags & ApplicationInfo.FLAG_SYSTEM) == 1) {
                 try{
@@ -157,6 +184,7 @@ public class Main extends Activity {
                             .append("unknown").append(";")
                             .append("unknown").append("\n");
                 }catch(Exception e){
+                    Log.e("SystemApps", "Error while gathering data", e);
                     installedApps.append("SystemApp;")
                             .append(pm.getApplicationLabel(app)).append(";")
                             .append("unknown").append(";")
@@ -169,7 +197,7 @@ public class Main extends Activity {
                             .append("unknown").append(";")
                             .append("unknown").append(";")
                             .append("unknown").append(";")
-                            .append("unknown").append("\n");
+                            .append("unknown").append(";\n");
                 }
             } else {
                 try{
@@ -188,6 +216,7 @@ public class Main extends Activity {
                             .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).firstInstallTime)))).append(";")
                             .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).lastUpdateTime)))).append("\n");
                 }catch(Exception e){
+                    Log.e("UserApps", "Error while gathering data", e);
                     installedApps.append("UserApp;")
                             .append(pm.getApplicationLabel(app)).append(";")
                             .append("unknown").append(";")
@@ -200,14 +229,15 @@ public class Main extends Activity {
                             .append("unknown").append(";")
                             .append("unknown").append(";")
                             .append("unknown").append(";")
-                            .append("unknown").append("\n");
+                            .append("unknown").append(";\n");
                 }
             }
         }
-        ActivityManager actvityManager = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
+        saveFiles(installedApps.toString(), "Installed_Apps", "csv");
+        ActivityManager activityManager = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
         StringBuilder runningApps = new StringBuilder();
-        runningApps.append("Process_Name;Importance;PID;UID\n");
-        List<ActivityManager.RunningAppProcessInfo> procInfos = actvityManager.getRunningAppProcesses();
+        runningApps.append("Process_Name;Importance;PID;UID;\n");
+        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
         for(ActivityManager.RunningAppProcessInfo procInfo : procInfos) {
             runningApps.append(procInfo.processName).append(";")
                     .append(procInfo.importance).append(";")
@@ -215,6 +245,7 @@ public class Main extends Activity {
                     .append(procInfo.uid)
                     .append("\n");
         }
+        saveFiles(runningApps.toString(), "Running_Apps", "csv");
         RootTools.debugMode = false;
         String isRooted = "not checked";
         if (RootTools.isRootAvailable()) {
@@ -230,10 +261,9 @@ public class Main extends Activity {
         }
         String androidVersion = Build.VERSION.RELEASE;
         String androidModel = Build.MODEL;
-        String eMailBody = "Android Device: " + androidModel + "\n" +
-                "Android Version: " + androidVersion + "\n" +
-                "Is Device rooted: " + isRooted + "\n" +
-                "Is Busybox available: " + isBusyboxAvailable + "\n\n" +
+        String meta = "Android Device: " + androidModel + "\n" + "Android Version: " + androidVersion + "\n" + "Is Device rooted: " + isRooted + "\n" + "Is Busybox available: " + isBusyboxAvailable;
+        saveFiles(meta, "Meta", "txt");
+        String eMailBody = meta + "\n\n" +
                 "List of installed Applications:\n" +
                 "--------------------------------------------------------------\n" +
                 installedApps.toString() +

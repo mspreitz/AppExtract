@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">AppExtract</string>
     <string name="about_title">About</string>
-    <string name="about_desc">AppExtract for Android generates a list of both, installed and running apps with a large amount of META data that can help to identify unwanted or even malicious applications.\n\nThese lists can be transferred via your favorite email app to an analyst of your confidence for further analysis.\n\nPlease be patient after hitting the button below, as collecting the necessary data is taking some time.\n\n</string>
+    <string name="about_desc">AppExtract for Android generates a list of installed and running apps with a large amount of META data that can help to identify unwanted or even malicious applications.\n\nThese lists can be transferred via your favorite email app to an analyst of your confidence for further analysis.\n\nPlease be patient after hitting the button below, as collecting the necessary data is taking some time.\n\nIf sending the data fails, you can still access the gathered data on the external storage.\n\n</string>
     <string name="action_about">About</string>
     <string name="action_send">Send report to analyst</string>
     <string name="button_text">Send report to analyst</string>
