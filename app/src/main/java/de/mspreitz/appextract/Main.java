@@ -130,25 +130,6 @@ public class Main extends Activity {
         return Environment.MEDIA_MOUNTED.equals(state);
     }
 
-    public void saveFiles(String Data, String Value, String Type) {
-        if (isExternalStorageWritable()) {
-            try {
-                File folder = new File(Environment.getExternalStorageDirectory() + "/AppExtract");
-                if (!folder.exists())
-                    folder.mkdir();
-                final String filename = folder.toString() + "/" + Value + "_" + String.valueOf(Calendar.getInstance().getTimeInMillis()) + "." + Type;
-                FileWriter fw = new FileWriter(filename);
-                fw.append(Data);
-                fw.flush();
-                fw.close();
-            } catch (IOException e) {
-                Log.e("SDcard", "No external storage available", e);
-            }
-        } else {
-            Log.e("SDcard", "No external storage available");
-        }
-    }
-
     public void sendEmailMessage(String body) {
         Intent mailIntent = new Intent();
         mailIntent.setAction(Intent.ACTION_SEND);
@@ -160,120 +141,156 @@ public class Main extends Activity {
     }
 
     public void sendMessage() {
-        final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        PackageManager pm = getPackageManager();
-        List<ApplicationInfo> apps = pm.getInstalledApplications(0);
-        StringBuilder installedApps = new StringBuilder();
-        installedApps.append("Type;App_Name;md5;TargetSdkVersion;Package_Name;Process_Name;APK_Location;Version_Code;Version_Name;Certificate_Info;Certificate_SN;InstallTime;LastModified;\n");
-        for(ApplicationInfo app : apps) {
-            if ((app.flags & ApplicationInfo.FLAG_SYSTEM) == 1) {
-                try{
-                    String md5 = calculateMD5(app.sourceDir);
-                    installedApps.append("SystemApp;")
-                            .append(pm.getApplicationLabel(app)).append(";")
-                            .append(md5).append(";")
-                            .append(app.targetSdkVersion).append(";")
-                            .append(app.packageName).append(";")
-                            .append(app.processName).append(";")
-                            .append(app.sourceDir).append(";")
-                            .append(pm.getPackageInfo(app.packageName, 0).versionCode).append(";")
-                            .append(pm.getPackageInfo(app.packageName, 0).versionName).append(";")
-                            .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSubjectDN()).append(";")
-                            .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSerialNumber()).append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append("\n");
-                }catch(Exception e){
-                    Log.e("SystemApps", "Error while gathering data", e);
-                    installedApps.append("SystemApp;")
-                            .append(pm.getApplicationLabel(app)).append(";")
-                            .append("unknown").append(";")
-                            .append(app.targetSdkVersion).append(";")
-                            .append(app.packageName).append(";")
-                            .append(app.processName).append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";\n");
+        if (isExternalStorageWritable()) {
+            try {
+                File folder = new File(Environment.getExternalStorageDirectory() + "/AppExtract");
+                if (!folder.exists()) folder.mkdir();
+                StringBuilder eMailBody = new StringBuilder();
+                final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+                mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                RootTools.debugMode = false;
+                String isRooted = "not checked";
+                if (RootTools.isRootAvailable()) {
+                    isRooted = "yes";
+                } else {
+                    isRooted = "no";
                 }
-            } else {
-                try{
-                    String md5 = calculateMD5(app.sourceDir);
-                    installedApps.append("UserApp;")
-                            .append(pm.getApplicationLabel(app)).append(";")
-                            .append(md5).append(";")
-                            .append(app.targetSdkVersion).append(";")
-                            .append(app.packageName).append(";")
-                            .append(app.processName).append(";")
-                            .append(app.sourceDir).append(";")
-                            .append(pm.getPackageInfo(app.packageName, 0).versionCode).append(";")
-                            .append(pm.getPackageInfo(app.packageName, 0).versionName).append(";")
-                            .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSubjectDN()).append(";")
-                            .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSerialNumber()).append(";")
-                            .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).firstInstallTime)))).append(";")
-                            .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).lastUpdateTime)))).append("\n");
-                }catch(Exception e){
-                    Log.e("UserApps", "Error while gathering data", e);
-                    installedApps.append("UserApp;")
-                            .append(pm.getApplicationLabel(app)).append(";")
-                            .append("unknown").append(";")
-                            .append(app.targetSdkVersion).append(";")
-                            .append(app.packageName).append(";")
-                            .append(app.processName).append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";")
-                            .append("unknown").append(";\n");
+                String isBusyboxAvailable = "not checked";
+                if (RootTools.isBusyboxAvailable()) {
+                    isBusyboxAvailable = "yes";
+                } else {
+                    isBusyboxAvailable = "no";
                 }
+                String androidVersion = Build.VERSION.RELEASE;
+                String androidModel = Build.MODEL;
+                try{
+                    FileWriter fw3 = new FileWriter(folder + "/Meta_" + String.valueOf(Calendar.getInstance().getTimeInMillis()) + ".txt");
+                    String meta = "Android Device: " + androidModel + "\n" + "Android Version: " + androidVersion + "\n" + "Is Device rooted: " + isRooted + "\n" + "Is Busybox available: " + isBusyboxAvailable;
+                    eMailBody.append(meta);
+                    eMailBody.append("\n\n\n");
+                    fw3.append(meta);
+                    fw3.flush();
+                    fw3.close();
+                }catch (IOException e){
+                    Log.e("Meta", "Error while gathering data", e);
+                }
+                PackageManager pm = getPackageManager();
+                List<ApplicationInfo> apps = pm.getInstalledApplications(0);
+                String filenameInstalledApps = folder + "/InstalledApps_" + String.valueOf(Calendar.getInstance().getTimeInMillis()) + ".csv";
+                eMailBody.append("List of installed Applications:\n--------------------------------------------------------------\n");
+                try{
+                    FileWriter fw = new FileWriter(filenameInstalledApps);
+                    fw.append("Type;App_Name;md5;TargetSdkVersion;Package_Name;Process_Name;APK_Location;Version_Code;Version_Name;Certificate_Info;Certificate_SN;InstallTime;LastModified;\n");
+                    StringBuilder installedApps = new StringBuilder();
+                    for(ApplicationInfo app : apps) {
+                        installedApps.setLength(0);
+                        if ((app.flags & ApplicationInfo.FLAG_SYSTEM) == 1) {
+                            try{
+                                String md5 = calculateMD5(app.sourceDir);
+                                installedApps.append("SystemApp;")
+                                        .append(pm.getApplicationLabel(app)).append(";")
+                                        .append(md5).append(";")
+                                        .append(app.targetSdkVersion).append(";")
+                                        .append(app.packageName).append(";")
+                                        .append(app.processName).append(";")
+                                        .append(app.sourceDir).append(";")
+                                        .append(pm.getPackageInfo(app.packageName, 0).versionCode).append(";")
+                                        .append(pm.getPackageInfo(app.packageName, 0).versionName).append(";")
+                                        .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSubjectDN()).append(";")
+                                        .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSerialNumber()).append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append("\n");
+                            }catch(Exception e){
+                                Log.e("SystemApps", "Error while gathering data", e);
+                                installedApps.append("SystemApp;")
+                                        .append(pm.getApplicationLabel(app)).append(";")
+                                        .append("unknown").append(";")
+                                        .append(app.targetSdkVersion).append(";")
+                                        .append(app.packageName).append(";")
+                                        .append(app.processName).append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";\n");
+                            }
+                            eMailBody.append(installedApps);
+                            fw.append(installedApps);
+                        } else {
+                            installedApps.setLength(0);
+                            try{
+                                String md5 = calculateMD5(app.sourceDir);
+                                installedApps.append("UserApp;")
+                                        .append(pm.getApplicationLabel(app)).append(";")
+                                        .append(md5).append(";")
+                                        .append(app.targetSdkVersion).append(";")
+                                        .append(app.packageName).append(";")
+                                        .append(app.processName).append(";")
+                                        .append(app.sourceDir).append(";")
+                                        .append(pm.getPackageInfo(app.packageName, 0).versionCode).append(";")
+                                        .append(pm.getPackageInfo(app.packageName, 0).versionName).append(";")
+                                        .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSubjectDN()).append(";")
+                                        .append(((X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(new ByteArrayInputStream(pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNATURES).signatures[0].toByteArray()))).getSerialNumber()).append(";")
+                                        .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).firstInstallTime)))).append(";")
+                                        .append(new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss", Locale.GERMANY).format(new Date((pm.getPackageInfo(app.packageName, 0).lastUpdateTime)))).append("\n");
+                            }catch(Exception e){
+                                Log.e("UserApps", "Error while gathering data", e);
+                                installedApps.append("UserApp;")
+                                        .append(pm.getApplicationLabel(app)).append(";")
+                                        .append("unknown").append(";")
+                                        .append(app.targetSdkVersion).append(";")
+                                        .append(app.packageName).append(";")
+                                        .append(app.processName).append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";")
+                                        .append("unknown").append(";\n");
+                            }
+                            eMailBody.append(installedApps);
+                            fw.append(installedApps);
+                        }
+                    }
+                    eMailBody.append("--------------------------------------------------------------\n\n\n\n\n");
+                    fw.flush();
+                    fw.close();
+                }catch (IOException e){
+                    Log.e("InstalledApps", "Error while gathering data", e);
+                }
+                String filenameRunningApps = folder + "/RunningApps_" + String.valueOf(Calendar.getInstance().getTimeInMillis()) + ".csv";
+                eMailBody.append("\n\n\n\nList of running Applications:\n--------------------------------------------------------------\n");
+                try{
+                    FileWriter fw2 = new FileWriter(filenameRunningApps);
+                    ActivityManager activityManager = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
+                    StringBuilder runningApps = new StringBuilder();
+                    runningApps.append("Process_Name;Importance;PID;UID;\n");
+                    List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
+                    for(ActivityManager.RunningAppProcessInfo procInfo : procInfos) {
+                        runningApps.setLength(0);
+                        runningApps.append(procInfo.processName).append(";")
+                                .append(procInfo.importance).append(";")
+                                .append(procInfo.pid).append(";")
+                                .append(procInfo.uid)
+                                .append("\n");
+                        fw2.append(runningApps);
+                        eMailBody.append(runningApps);
+                    }
+                    fw2.flush();
+                    fw2.close();
+                }catch (IOException e){
+                    Log.e("RunningApps", "Error while gathering data", e);
+                }
+                sendEmailMessage(eMailBody.toString());
+            } catch (Exception e) {
+                Log.e("SDcard", "No external storage available", e);
             }
-        }
-        saveFiles(installedApps.toString(), "Installed_Apps", "csv");
-        ActivityManager activityManager = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
-        StringBuilder runningApps = new StringBuilder();
-        runningApps.append("Process_Name;Importance;PID;UID;\n");
-        List<ActivityManager.RunningAppProcessInfo> procInfos = activityManager.getRunningAppProcesses();
-        for(ActivityManager.RunningAppProcessInfo procInfo : procInfos) {
-            runningApps.append(procInfo.processName).append(";")
-                    .append(procInfo.importance).append(";")
-                    .append(procInfo.pid).append(";")
-                    .append(procInfo.uid)
-                    .append("\n");
-        }
-        saveFiles(runningApps.toString(), "Running_Apps", "csv");
-        RootTools.debugMode = false;
-        String isRooted = "not checked";
-        if (RootTools.isRootAvailable()) {
-            isRooted = "yes";
         } else {
-            isRooted = "no";
+            Log.e("SDcard", "No external storage available");
         }
-        String isBusyboxAvailable = "not checked";
-        if (RootTools.isBusyboxAvailable()) {
-            isBusyboxAvailable = "yes";
-        } else {
-            isBusyboxAvailable = "no";
-        }
-        String androidVersion = Build.VERSION.RELEASE;
-        String androidModel = Build.MODEL;
-        String meta = "Android Device: " + androidModel + "\n" + "Android Version: " + androidVersion + "\n" + "Is Device rooted: " + isRooted + "\n" + "Is Busybox available: " + isBusyboxAvailable;
-        saveFiles(meta, "Meta", "txt");
-        String eMailBody = meta + "\n\n" +
-                "List of installed Applications:\n" +
-                "--------------------------------------------------------------\n" +
-                installedApps.toString() +
-                "--------------------------------------------------------------\n" +
-                "\n\n\n\n" +
-                "List of running Applications:\n" +
-                "--------------------------------------------------------------\n" +
-                runningApps.toString() +
-                "--------------------------------------------------------------";
-        sendEmailMessage(eMailBody);
     }
 
     public class LoadData extends AsyncTask<Void, Void, Void> {
